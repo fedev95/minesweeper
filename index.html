@@ -40,6 +40,15 @@
           </ul>
         </div>
       </div>
+
+      <div class="mode-switch">
+        <span id="mode-label" class="theme-label">Flag mode</span>
+        <button id="mode" class="switch" type="button" role="switch"
+                aria-checked="false" aria-labelledby="mode-label"
+                title="When on, a click places a flag and a right click reveals">
+          <span class="switch-thumb"></span>
+        </button>
+      </div>
     </div>
 
     <div class="panel">
@@ -55,7 +64,7 @@
       <div id="board" class="board"></div>
     </div>
 
-    <p class="help"><strong>Left click:</strong> reveal · <strong>Right click:</strong> flag · <strong>Middle click:</strong> open neighbors / highlight</p>
+    <p class="help"><strong>Left click:</strong> <span id="help-left">reveal</span> · <strong>Right click:</strong> <span id="help-right">flag</span> · <strong>Middle click:</strong> open neighbors / highlight</p>
   </main>
 
   <script src="script.js"></script>

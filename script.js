@@ -10,6 +10,10 @@ const timerEl = document.getElementById("timer");
 const bestEl = document.getElementById("best");
 const resetBtn = document.getElementById("reset");
 const levelButtons = document.querySelectorAll(".difficulty button");
+const modeBtn = document.getElementById("mode");
+const modeLabel = document.getElementById("mode-label");
+const helpLeft = document.getElementById("help-left");
+const helpRight = document.getElementById("help-right");
 
 let levelKey = "medium";
 let level = LEVELS[levelKey];
@@ -20,6 +24,7 @@ let revealedCount = 0;
 let flagsCount = 0;
 let timer = null;
 let seconds = 0;
+let flagMode = false;    // swapped clicks: primary click flags, secondary reveals
 
 // ---------- Utilities ----------
 
@@ -170,6 +175,7 @@ function checkWin() {
         cell.el.textContent = "🚩";
       }
     });
+    pulseMines("win");
     flagsCount = level.mines;
     updateMinesLeft();
     resetBtn.textContent = "😎";
@@ -179,6 +185,13 @@ function checkWin() {
       updateBest();
     }
   }
+}
+
+// Brief light pulse on every mine cell
+function pulseMines(result) {
+  cells.forEach((cell) => {
+    if (cell.mine) cell.el.classList.add("pulse", result);
+  });
 }
 
 function lose(explodedCell) {
@@ -194,6 +207,7 @@ function lose(explodedCell) {
     }
   });
   explodedCell.el.classList.add("exploded");
+  pulseMines("lose");
   resetBtn.textContent = "😵";
 }
 
@@ -238,26 +252,68 @@ function updateMinesLeft() {
 
 // ---------- Events ----------
 
-boardEl.addEventListener("click", (e) => {
-  const el = e.target.closest(".cell");
-  if (!el || gameOver) return;
-  const r = Number(el.dataset.r);
-  const c = Number(el.dataset.c);
+// Reveal a hidden cell, or open the neighbors of a revealed number
+function revealAction(r, c) {
   const cell = cells[index(r, c)];
-
   if (cell.flagged) return;
   if (!minesPlaced) placeMines(r, c);
-
   if (cell.revealed) chord(r, c);
   else reveal(r, c);
+}
+
+// Flag a hidden cell; on a revealed number, open its neighbors
+function flagAction(r, c) {
+  const cell = cells[index(r, c)];
+  if (cell.revealed) chord(r, c);
+  else toggleFlag(r, c);
+}
+
+function cellFromEvent(e) {
+  const el = e.target.closest(".cell");
+  if (!el || gameOver) return null;
+  return [Number(el.dataset.r), Number(el.dataset.c)];
+}
+
+// Left click / tap
+boardEl.addEventListener("click", (e) => {
+  const pos = cellFromEvent(e);
+  if (!pos) return;
+  if (flagMode) flagAction(...pos);
+  else revealAction(...pos);
 });
 
+// Right click / long press
 boardEl.addEventListener("contextmenu", (e) => {
   e.preventDefault();
-  const el = e.target.closest(".cell");
-  if (!el || gameOver) return;
-  toggleFlag(Number(el.dataset.r), Number(el.dataset.c));
+  const pos = cellFromEvent(e);
+  if (!pos) return;
+  if (flagMode) revealAction(...pos);
+  else toggleFlag(...pos);
 });
+
+// ---------- Swap clicks ----------
+
+function setFlagMode(on) {
+  flagMode = on;
+  modeBtn.setAttribute("aria-checked", String(on));
+  helpLeft.textContent = on ? "flag" : "reveal";
+  helpRight.textContent = on ? "reveal" : "flag";
+}
+
+function toggleFlagMode() {
+  setFlagMode(!flagMode);
+  try { localStorage.setItem("flag-mode", flagMode ? "1" : "0"); } catch {}
+}
+
+modeBtn.addEventListener("click", toggleFlagMode);
+
+// Clicking the label toggles the switch too
+modeLabel.addEventListener("click", () => {
+  toggleFlagMode();
+  modeBtn.focus();
+});
+
+try { setFlagMode(localStorage.getItem("flag-mode") === "1"); } catch { setFlagMode(false); }
 
 // Middle click: if the flags match the number, reveal the neighbors;
 // otherwise, highlight hidden neighbors while the button is held
