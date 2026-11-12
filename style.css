@@ -432,16 +432,6 @@ h1 {
 .n7 { color: var(--n7); }
 .n8 { color: var(--n8); }
 
-.message {
-  margin: 0;
-  min-height: 1.5em;
-  font-size: 1.2rem;
-  font-weight: 600;
-}
-
-.message.win { color: var(--green); }
-.message.lose { color: var(--red); }
-
 .help {
   margin: 0;
   font-size: 0.85rem;

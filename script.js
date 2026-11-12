@@ -9,7 +9,6 @@ const minesLeftEl = document.getElementById("mines-left");
 const timerEl = document.getElementById("timer");
 const bestEl = document.getElementById("best");
 const resetBtn = document.getElementById("reset");
-const messageEl = document.getElementById("message");
 const levelButtons = document.querySelectorAll(".difficulty button");
 
 let levelKey = "medium";
@@ -52,8 +51,6 @@ function newGame() {
   revealedCount = 0;
   flagsCount = 0;
   resetBtn.textContent = "🙂";
-  messageEl.textContent = "";
-  messageEl.className = "message";
   updateMinesLeft();
   updateBest();
 
@@ -180,11 +177,7 @@ function checkWin() {
     if (best === null || seconds < best) {
       saveBest(seconds);
       updateBest();
-      messageEl.textContent = `New record! You won in ${seconds} seconds`;
-    } else {
-      messageEl.textContent = `You won in ${seconds} seconds!`;
     }
-    messageEl.classList.add("win");
   }
 }
 
@@ -202,8 +195,6 @@ function lose(explodedCell) {
   });
   explodedCell.el.classList.add("exploded");
   resetBtn.textContent = "😵";
-  messageEl.textContent = "Boom! You lost.";
-  messageEl.classList.add("lose");
 }
 
 // ---------- Timer and counter ----------
