@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Minesweeper</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="game">
+    <h1>Minesweeper</h1>
+
+    <div class="controls">
+      <div class="difficulty">
+        <button data-level="easy">Easy</button>
+        <button data-level="medium" class="active">Medium</button>
+        <button data-level="hard">Hard</button>
+      </div>
+
+      <div class="theme-picker">
+        <span id="theme-label" class="theme-label">Theme</span>
+        <div class="select" id="theme-select">
+          <button type="button" class="select-button" id="theme-button"
+                  aria-haspopup="listbox" aria-expanded="false"
+                  aria-controls="theme-list" aria-labelledby="theme-label theme-button">
+            <span id="theme-value">Original</span>
+          </button>
+          <ul class="select-list" id="theme-list" role="listbox"
+              aria-labelledby="theme-label" tabindex="-1" hidden>
+          <li role="option" id="theme-opt-default" data-value="default" aria-selected="false">Original</li>
+          <li role="option" id="theme-opt-rose-pine" data-value="rose-pine" aria-selected="false">Rosé Pine</li>
+          <li role="option" id="theme-opt-rose-pine-dawn" data-value="rose-pine-dawn" aria-selected="false">Rosé Pine Dawn</li>
+          <li role="option" id="theme-opt-dracula" data-value="dracula" aria-selected="false">Dracula</li>
+          <li role="option" id="theme-opt-catppuccin" data-value="catppuccin" aria-selected="false">Catppuccin Mocha</li>
+          <li role="option" id="theme-opt-nord" data-value="nord" aria-selected="false">Nord</li>
+          <li role="option" id="theme-opt-gruvbox" data-value="gruvbox" aria-selected="false">Gruvbox</li>
+          <li role="option" id="theme-opt-tokyo-night" data-value="tokyo-night" aria-selected="false">Tokyo Night</li>
+          <li role="option" id="theme-opt-solarized-light" data-value="solarized-light" aria-selected="false">Solarized Light</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="counter" title="Mines left">💣 <span id="mines-left">0</span></div>
+      <button id="reset" title="Restart">🙂</button>
+      <div class="counter">
+        <span title="Time">⏱ <span id="timer">0</span></span>
+        <span class="best" title="Best time" hidden>🏆 <span id="best"></span></span>
+      </div>
+    </div>
+
+    <div class="board-wrap">
+      <div id="board" class="board"></div>
+    </div>
+
+    <p id="message" class="message"></p>
+    <p class="help"><strong>Left click:</strong> reveal · <strong>Right click:</strong> flag · <strong>Middle click:</strong> open neighbors / highlight</p>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
