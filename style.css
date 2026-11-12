@@ -438,42 +438,47 @@ h1 {
 
 .board {
   display: grid;
-  gap: 2px;
+  touch-action: manipulation; /* no double-tap zoom delay on mobile */
   user-select: none;
 }
 
+/* Cells touch each other so the pointer never falls into a gap.
+   The visual gap is a transparent border: it still belongs to the
+   cell (clickable), but the background is clipped inside it. */
 .cell {
-  width: 30px;
-  height: 30px;
+  width: var(--cell-size, 32px);
+  height: var(--cell-size, 32px);
+  border: 1px solid transparent;
+  background-clip: padding-box;
   display: flex;
   justify-content: center;
   align-items: center;
   font-weight: 700;
-  font-size: 1rem;
-  border-radius: 4px;
-  background: var(--cell);
+  font-size: calc(var(--cell-size, 32px) * 0.5);
+  border-radius: 5px;
+  background-color: var(--cell);
   cursor: pointer;
-  transition: background 0.1s;
+  transition: background-color 0.1s;
 }
 
 .cell:hover:not(.revealed),
 .cell.highlight {
-  background: var(--cell-hover);
+  background-color: var(--cell-hover);
 }
 
 .cell.revealed {
-  background: var(--revealed);
+  background-color: var(--revealed);
   cursor: default;
 }
 
 .cell.mine {
-  background: var(--red);
+  background-color: var(--red);
 }
 
 /* The mine that was clicked gets a ring to tell it apart */
 .cell.mine.exploded {
   --ring: inset 0 0 0 2px var(--text);
-  background: var(--red);
+  background-color: var(--red);
   box-shadow: var(--ring);
 }
 
@@ -512,7 +517,7 @@ h1 {
 }
 
 .cell.wrong-flag {
-  background: color-mix(in srgb, var(--yellow) 40%, var(--revealed));
+  background-color: color-mix(in srgb, var(--yellow) 40%, var(--revealed));
 }
 
 /* Number colors */
