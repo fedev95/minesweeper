@@ -6,12 +6,15 @@ import { formatBest } from "./timer.js";
 
 const dialog = document.getElementById("stats");
 const body = document.getElementById("stats-body");
+const tabs = [...document.querySelectorAll('.stats-modes [role="tab"]')];
+
+let shownNoGuess = true; // mode whose statistics are on screen
 
 export const isStatsOpen = () => dialog.open;
 
 function renderCard(key, isCurrent) {
-  const stats = getStats(key);
-  const best = getBest(key);
+  const stats = getStats(key, shownNoGuess);
+  const best = getBest(key, shownNoGuess);
   const winRate = stats.played ? `${Math.round((stats.won / stats.played) * 100)}%` : "–";
   const items = [
     ["Played", stats.played],
@@ -50,6 +53,12 @@ function renderCard(key, isCurrent) {
 }
 
 function render(currentLevel) {
+  tabs.forEach((tab) => {
+    const selected = (tab.dataset.noGuess === "true") === shownNoGuess;
+    tab.setAttribute("aria-selected", String(selected));
+    tab.tabIndex = selected ? 0 : -1;
+    if (selected) body.setAttribute("aria-labelledby", tab.id);
+  });
   body.replaceChildren(
     ...Object.keys(LEVELS).map((key) => renderCard(key, key === currentLevel))
   );
@@ -70,11 +79,29 @@ function close() {
 }
 
 // `getLevel()` returns the current difficulty, highlighted in the panel.
+// `getNoGuess()` returns the current mode, shown first when the panel opens.
 // `onReset()` runs after the statistics are cleared.
-export function initStatsPanel({ getLevel, onReset }) {
+export function initStatsPanel({ getLevel, getNoGuess, onReset }) {
   document.getElementById("stats-open").addEventListener("click", () => {
+    shownNoGuess = getNoGuess();
     render(getLevel());
     dialog.showModal();
+  });
+
+  // Mode tabs: click, or arrow keys to move between them
+  const showMode = (tab) => {
+    shownNoGuess = tab.dataset.noGuess === "true";
+    render(getLevel());
+    tab.focus();
+  };
+  tabs.forEach((tab, i) => {
+    tab.addEventListener("click", () => showMode(tab));
+    tab.addEventListener("keydown", (e) => {
+      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+      e.preventDefault();
+      const step = e.key === "ArrowRight" ? 1 : -1;
+      showMode(tabs[(i + step + tabs.length) % tabs.length]);
+    });
   });
 
   document.getElementById("stats-close").addEventListener("click", close);

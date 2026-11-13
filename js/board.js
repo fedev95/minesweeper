@@ -18,7 +18,8 @@ export const state = {
   endedAt: 0,         // performance.now() when the last game ended
   revealedCount: 0,
   flagsCount: 0,
-  noGuess: true,      // boards solvable without guessing (applies on the first click)
+  noGuess: true,      // switch: boards solvable without guessing
+  gameNoGuess: true,  // mode of the current game, fixed on its first click
 };
 
 // ---------- Events ----------
@@ -60,6 +61,10 @@ export function setNoGuess(on) {
   state.noGuess = on;
 }
 
+// Mode of the game being played: fixed once the mines are placed,
+// before that it follows the switch
+export const isNoGuessGame = () => (state.minesPlaced ? state.gameNoGuess : state.noGuess);
+
 export function setLevel(key) {
   state.levelKey = LEVELS[key] ? key : DEFAULT_LEVEL;
   state.level = LEVELS[state.levelKey];
@@ -99,7 +104,8 @@ export function relayout() {
 // Place mines on the first click: that cell and its neighbors stay safe
 function placeMines(safeR, safeC) {
   const { cells, level } = state;
-  const mines = generateMines(level, index(safeR, safeC), { noGuess: state.noGuess });
+  state.gameNoGuess = state.noGuess;
+  const mines = generateMines(level, index(safeR, safeC), { noGuess: state.gameNoGuess });
   mines.forEach((isMine, i) => { cells[i].mine = isMine; });
 
   // Compute numbers

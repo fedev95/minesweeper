@@ -89,7 +89,13 @@
       <h2 id="stats-title">Statistics</h2>
       <button type="button" class="sidebar-close" id="stats-close" aria-label="Close statistics">✕</button>
     </header>
-    <div id="stats-body" class="stats-body"></div>
+    <div class="stats-modes" role="tablist" aria-label="Game mode">
+      <button type="button" role="tab" id="stats-tab-noguess" data-no-guess="true"
+              aria-controls="stats-body">No guessing</button>
+      <button type="button" role="tab" id="stats-tab-classic" data-no-guess="false"
+              aria-controls="stats-body">With guessing</button>
+    </div>
+    <div id="stats-body" class="stats-body" role="tabpanel"></div>
     <button type="button" class="stats-reset" id="stats-reset">Reset statistics</button>
   </dialog>
 
