@@ -1,0 +1,192 @@
+/* Top controls: difficulty buttons, theme select, flag mode switch, stats button */
+
+/* Controls */
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+}
+
+.difficulty {
+  display: flex;
+  gap: 8px;
+}
+
+.difficulty button,
+.select-button,
+.stats-open {
+  padding: 8px 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background-color: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.difficulty button:hover,
+.select-button:hover,
+.stats-open:hover {
+  background-color: var(--surface-hover);
+}
+
+.difficulty button.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-text);
+}
+
+/* Focus uses the theme color instead of the browser blue */
+.difficulty button:focus,
+.select-button:focus,
+.stats-open:focus {
+  outline: none;
+}
+
+.difficulty button:focus-visible,
+.select-button:focus-visible,
+.stats-open:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.theme-picker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.theme-label {
+  color: var(--muted);
+  cursor: default;
+}
+
+/* Custom select */
+.select {
+  position: relative;
+}
+
+.select-button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 190px;
+  justify-content: space-between;
+  text-align: left;
+}
+
+.select-button::after {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-right: 2px solid var(--muted);
+  border-bottom: 2px solid var(--muted);
+  transform: translateY(-2px) rotate(45deg);
+  transition: transform 0.15s;
+}
+
+.select-button[aria-expanded="true"]::after {
+  transform: translateY(2px) rotate(-135deg);
+}
+
+.select-list {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 10;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.25);
+  max-height: 400px;
+  overflow-y: auto;
+  scrollbar-color: var(--border) transparent;
+}
+
+.select-list:focus {
+  outline: none;
+}
+
+.select-list [role="option"] {
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.select-list [role="option"].active {
+  background: var(--surface-hover);
+}
+
+.select-list [role="option"][aria-selected="true"] {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.select-list:focus-visible [role="option"].active {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+/* Flag mode switch */
+.mode-switch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.switch {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background-color: var(--surface);
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.switch-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--muted);
+  transition: transform 0.2s, background-color 0.2s;
+}
+
+.switch[aria-checked="true"] {
+  background-color: var(--accent);
+  border-color: var(--accent);
+}
+
+.switch[aria-checked="true"] .switch-thumb {
+  transform: translateX(20px);
+  background: var(--accent-text);
+}
+
+.switch:focus {
+  outline: none;
+}
+
+.switch:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .switch,
+  .switch-thumb {
+    transition: none;
+  }
+}
