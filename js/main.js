@@ -33,9 +33,12 @@ on("win", () => {
   timer.stop();
   hud.setFace("won");
   recordResult(state.levelKey, true);
-  const final = timer.showFinal();
-  if (submitTime(state.levelKey, final)) {
-    hud.showBest(final);
+  // A time past the 999 s limit is saved as 999, but only when there is no
+  // record yet: any existing record (999.x at worst) is already as good
+  const { seconds, capped } = timer.showFinal();
+  const counts = !capped || getBest(state.levelKey) === null;
+  if (counts && submitTime(state.levelKey, seconds)) {
+    hud.showBest(seconds);
     hud.celebrateRecord();
   }
 });

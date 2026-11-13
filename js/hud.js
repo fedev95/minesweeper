@@ -1,5 +1,7 @@
 // Top panel: mines counter, reset face and best time
 
+import { formatBest } from "./timer.js";
+
 const minesLeftEl = document.getElementById("mines-left");
 const resetBtn = document.getElementById("reset");
 const timeEl = document.getElementById("timer").parentElement;
@@ -21,7 +23,7 @@ export function setMinesLeft(count) {
 }
 
 export function showBest(best) {
-  bestEl.textContent = best === null ? "" : best.toFixed(1);
+  bestEl.textContent = best === null ? "" : formatBest(best);
   bestWrap.hidden = best === null;
 }
 

@@ -2,6 +2,7 @@
 
 import { LEVELS, LEVEL_NAMES } from "./levels.js";
 import { getStats, getBest, resetAll } from "./records.js";
+import { formatBest } from "./timer.js";
 
 const dialog = document.getElementById("stats");
 const body = document.getElementById("stats-body");
@@ -18,7 +19,7 @@ function renderCard(key, isCurrent) {
     ["Win rate", winRate],
     ["Streak", stats.streak],
     ["Best streak", stats.bestStreak],
-    ["Best time", best === null ? "–" : best.toFixed(1)],
+    ["Best time", best === null ? "–" : formatBest(best)],
   ];
 
   const card = document.createElement("section");
