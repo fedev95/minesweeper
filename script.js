@@ -23,8 +23,10 @@ let gameOver = false;
 let revealedCount = 0;
 let flagsCount = 0;
 let timer = null;
-let seconds = 0;
+let startTime = 0;       // performance.now() when the timer started
+let elapsed = 0;         // seconds, updated while playing and when the game ends
 let flagMode = false;    // swapped clicks: primary click flags, secondary reveals
+let gameEndedAt = 0;     // when the last game ended, to ignore stray clicks
 
 // ---------- Utilities ----------
 
@@ -49,7 +51,9 @@ function neighbors(r, c) {
 
 function newGame() {
   stopTimer();
-  seconds = 0;
+  cancelWave();
+  clearRecordHighlight();
+  elapsed = 0;
   timerEl.textContent = "0";
   gameOver = false;
   minesPlaced = false;
@@ -172,7 +176,7 @@ function reveal(r, c) {
     }
   }
 
-  checkWin();
+  checkWin(index(r, c));
 }
 
 function toggleFlag(r, c) {
@@ -202,65 +206,154 @@ function chord(r, c) {
 
 // ---------- Game over ----------
 
-function checkWin() {
+function checkWin(originIndex) {
   if (gameOver) return;
   if (revealedCount === level.rows * level.cols - level.mines) {
     gameOver = true;
+    gameEndedAt = performance.now();
     stopTimer();
-    // Flag all mines
-    cells.forEach((cell) => {
-      if (cell.mine && !cell.flagged) {
-        cell.flagged = true;
-        cell.el.textContent = "🚩";
-      }
-    });
-    pulseMines("win");
     flagsCount = level.mines;
     updateMinesLeft();
     resetBtn.textContent = "😎";
+    recordResult(true);
+
+    // Final time with tenths (truncated, like a stopwatch)
+    const final = Math.floor(elapsed * 10) / 10;
+    timerEl.textContent = final.toFixed(1);
     const best = getBest();
-    if (best === null || seconds < best) {
-      saveBest(seconds);
+    if (best === null || final < best) {
+      saveBest(final);
       updateBest();
+      celebrateRecord();
     }
+
+    // Flag the remaining mines as a green wave from the last opened cell
+    const unflagged = cells.filter((cell) => cell.mine && !cell.flagged);
+    unflagged.forEach((cell) => { cell.flagged = true; });
+    playWave(originIndex, unflagged, (cell) => {
+      cell.el.textContent = "🚩";
+    }, () => pulseMines("win"));
   }
 }
 
-// Brief light pulse on every mine cell
+// New best time: the trophy pops and the final time takes the accent color
+function celebrateRecord() {
+  timerEl.parentElement.classList.add("record");
+  bestEl.parentElement.classList.add("new-record");
+}
+
+function clearRecordHighlight() {
+  timerEl.parentElement.classList.remove("record");
+  bestEl.parentElement.classList.remove("new-record");
+}
+
+// Light pulse on every mine cell
 function pulseMines(result) {
   cells.forEach((cell) => {
+    cell.el.classList.remove("appear"); // let the pulse animation take over
     if (cell.mine) cell.el.classList.add("pulse", result);
   });
 }
 
+// ---------- End-of-game wave ----------
+
+// Pending timeouts of the end-of-game wave, cancelled by a new game
+let waveTimeouts = [];
+const WAVE_DURATION = 600; // ms for the wave to reach the farthest cell
+const WAVE_RING_MAX_DELAY = 45; // ms between rings on small boards
+
+const prefersReducedMotion = () =>
+  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+// Show `targets` in rings spreading from the cell at `originIndex`,
+// calling `show` on each one, then `finish` once the wave is done.
+// With reduced motion everything appears at once.
+function playWave(originIndex, targets, show, finish) {
+  if (prefersReducedMotion() || originIndex === undefined) {
+    targets.forEach(show);
+    finish();
+    return;
+  }
+
+  const sr = Math.floor(originIndex / level.cols);
+  const sc = originIndex % level.cols;
+  const rings = new Map();
+  for (const cell of targets) {
+    const i = cells.indexOf(cell);
+    const d = Math.round(Math.hypot(Math.floor(i / level.cols) - sr, (i % level.cols) - sc));
+    if (!rings.has(d)) rings.set(d, []);
+    rings.get(d).push(cell);
+  }
+  const maxRing = Math.max(0, ...rings.keys());
+  const step = maxRing ? Math.min(WAVE_RING_MAX_DELAY, WAVE_DURATION / maxRing) : 0;
+  for (const [d, ring] of rings) {
+    waveTimeouts.push(setTimeout(() => {
+      ring.forEach((cell) => {
+        show(cell);
+        cell.el.classList.add("appear");
+      });
+    }, d * step));
+  }
+  waveTimeouts.push(setTimeout(finish, maxRing * step + 200));
+}
+
+function cancelWave() {
+  waveTimeouts.forEach(clearTimeout);
+  waveTimeouts = [];
+}
+
+function showMine(cell) {
+  cell.el.classList.add("revealed", "mine");
+  cell.el.textContent = "💣";
+}
+
 function lose(explodedCell) {
   gameOver = true;
+  gameEndedAt = performance.now();
   stopTimer();
-  cells.forEach((cell) => {
-    if (cell.mine && !cell.flagged) {
-      cell.el.classList.add("revealed", "mine");
-      cell.el.textContent = "💣";
-    } else if (!cell.mine && cell.flagged) {
-      cell.el.classList.add("wrong-flag");
-      cell.el.textContent = "❌";
-    }
-  });
-  explodedCell.el.classList.add("exploded");
-  pulseMines("lose");
   resetBtn.textContent = "😵";
+  recordResult(false);
+
+  showMine(explodedCell);
+  explodedCell.el.classList.add("exploded");
+  if (!prefersReducedMotion()) shakeBoard();
+
+  // Reveal the other mines as a wave from the exploded one,
+  // then mark the wrong flags
+  const hidden = cells.filter((cell) => cell.mine && !cell.flagged && cell !== explodedCell);
+  playWave(cells.indexOf(explodedCell), hidden, showMine, () => {
+    cells.forEach((cell) => {
+      if (!cell.mine && cell.flagged) {
+        cell.el.classList.add("wrong-flag");
+        cell.el.textContent = "❌";
+      }
+    });
+    pulseMines("lose");
+  });
+}
+
+function shakeBoard() {
+  const wrap = boardEl.parentElement;
+  wrap.classList.remove("shake");
+  void wrap.offsetWidth; // restart the animation if it is still running
+  wrap.classList.add("shake");
+  wrap.addEventListener("animationend", () => wrap.classList.remove("shake"), { once: true });
 }
 
 // ---------- Timer and counter ----------
 
 function startTimer() {
   stopTimer();
+  startTime = performance.now();
+  // Tick often so whole seconds change on time; show only whole seconds while playing
   timer = setInterval(() => {
-    seconds++;
-    timerEl.textContent = seconds;
-  }, 1000);
+    elapsed = (performance.now() - startTime) / 1000;
+    timerEl.textContent = Math.floor(elapsed);
+  }, 100);
 }
 
 function stopTimer() {
+  if (timer !== null) elapsed = (performance.now() - startTime) / 1000;
   clearInterval(timer);
   timer = null;
 }
@@ -281,9 +374,128 @@ function saveBest(value) {
 
 function updateBest() {
   const best = getBest();
-  bestEl.textContent = best ?? "";
+  bestEl.textContent = best === null ? "" : best.toFixed(1);
   bestEl.parentElement.hidden = best === null;
 }
+
+// ---------- Statistics ----------
+
+// Per difficulty: { played, won, streak, bestStreak }. Only finished games count.
+function getStats(key) {
+  const empty = { played: 0, won: 0, streak: 0, bestStreak: 0 };
+  try {
+    return { ...empty, ...JSON.parse(localStorage.getItem(`stats-${key}`)) };
+  } catch {
+    return empty;
+  }
+}
+
+function recordResult(won) {
+  const stats = getStats(levelKey);
+  stats.played++;
+  if (won) {
+    stats.won++;
+    stats.streak++;
+    stats.bestStreak = Math.max(stats.bestStreak, stats.streak);
+  } else {
+    stats.streak = 0;
+  }
+  try { localStorage.setItem(`stats-${levelKey}`, JSON.stringify(stats)); } catch {}
+}
+
+const statsDialog = document.getElementById("stats");
+const statsBody = document.getElementById("stats-body");
+const LEVEL_NAMES = { easy: "Easy", medium: "Medium", hard: "Hard" };
+
+function renderStats() {
+  statsBody.innerHTML = "";
+  for (const key of Object.keys(LEVELS)) {
+    const st = getStats(key);
+    let best = null;
+    try { best = localStorage.getItem(`best-${key}`); } catch {}
+    const winRate = st.played ? `${Math.round((st.won / st.played) * 100)}%` : "–";
+    const items = [
+      ["Played", st.played],
+      ["Won", st.won],
+      ["Win rate", winRate],
+      ["Streak", st.streak],
+      ["Best streak", st.bestStreak],
+      ["Best time", best === null ? "–" : Number(best).toFixed(1)],
+    ];
+
+    const card = document.createElement("section");
+    card.className = "stats-card" + (key === levelKey ? " current" : "");
+    const title = document.createElement("h3");
+    title.textContent = LEVEL_NAMES[key];
+    if (key === levelKey) {
+      const tag = document.createElement("small");
+      tag.textContent = "Current";
+      title.appendChild(tag);
+    }
+    const grid = document.createElement("dl");
+    grid.className = "stats-grid";
+    for (const [label, value] of items) {
+      const item = document.createElement("div");
+      const dt = document.createElement("dt");
+      const dd = document.createElement("dd");
+      dt.textContent = label;
+      dd.textContent = value;
+      item.append(dt, dd);
+      grid.appendChild(item);
+    }
+    card.append(title, grid);
+    statsBody.appendChild(card);
+  }
+}
+
+document.getElementById("stats-open").addEventListener("click", () => {
+  renderStats();
+  statsDialog.showModal();
+});
+
+// Play the slide-out animation, then actually close the dialog
+function closeStats() {
+  if (!statsDialog.open || statsDialog.classList.contains("closing")) return;
+  statsDialog.classList.add("closing");
+  const animations = statsDialog.getAnimations();
+  const done = () => {
+    statsDialog.classList.remove("closing");
+    statsDialog.close();
+  };
+  // With reduced motion there is no animation: close right away
+  if (animations.length === 0) done();
+  else Promise.all(animations.map((a) => a.finished)).then(done, done);
+}
+
+document.getElementById("stats-close").addEventListener("click", closeStats);
+
+// Esc: animate instead of closing instantly
+statsDialog.addEventListener("cancel", (e) => {
+  e.preventDefault();
+  closeStats();
+});
+
+// Click on the dimmed backdrop (outside the panel) closes it
+statsDialog.addEventListener("click", (e) => {
+  if (e.target === statsDialog) {
+    const rect = statsDialog.getBoundingClientRect();
+    const inside = e.clientX >= rect.left && e.clientX <= rect.right &&
+                   e.clientY >= rect.top && e.clientY <= rect.bottom;
+    if (!inside) closeStats();
+  }
+});
+
+document.getElementById("stats-reset").addEventListener("click", () => {
+  if (!confirm("Reset all statistics and best times?")) return;
+  for (const key of Object.keys(LEVELS)) {
+    try {
+      localStorage.removeItem(`stats-${key}`);
+      localStorage.removeItem(`best-${key}`);
+    } catch {}
+  }
+  renderStats();
+  updateBest();
+});
 
 function updateMinesLeft() {
   minesLeftEl.textContent = level.mines - flagsCount;
@@ -313,8 +525,17 @@ function cellFromEvent(e) {
   return [Number(el.dataset.r), Number(el.dataset.c)];
 }
 
+// After a game ends, ignore clicks for a moment so a fast double click
+// on the last cell doesn't instantly start a new game
+const RESTART_CLICK_DELAY = 400;
+
 // Left click / tap
 boardEl.addEventListener("click", (e) => {
+  // Game over: a click on the board starts a new game
+  if (gameOver) {
+    if (performance.now() - gameEndedAt >= RESTART_CLICK_DELAY) newGame();
+    return;
+  }
   const pos = cellFromEvent(e);
   if (!pos) return;
   if (flagMode) flagAction(...pos);
@@ -426,15 +647,36 @@ boardEl.addEventListener("auxclick", (e) => {
 
 resetBtn.addEventListener("click", newGame);
 
+// Keyboard shortcut: R or F2 starts a new game
+document.addEventListener("keydown", (e) => {
+  if (e.ctrlKey || e.metaKey || e.altKey || e.repeat) return; // keep Ctrl+R etc.
+  if (e.target.closest(".select")) return; // theme list uses letters to jump
+  if (statsDialog.open) return;
+  if (e.key === "F2" || e.key.toLowerCase() === "r") {
+    e.preventDefault();
+    newGame();
+  }
+});
+
+function setLevel(key) {
+  if (!LEVELS[key]) key = "medium";
+  levelKey = key;
+  level = LEVELS[key];
+  levelButtons.forEach((b) => b.classList.toggle("active", b.dataset.level === key));
+}
+
 levelButtons.forEach((btn) => {
   btn.addEventListener("click", () => {
-    levelButtons.forEach((b) => b.classList.remove("active"));
-    btn.classList.add("active");
-    levelKey = btn.dataset.level;
-    level = LEVELS[levelKey];
+    setLevel(btn.dataset.level);
+    try { localStorage.setItem("level", levelKey); } catch {}
     newGame();
   });
 });
+
+// Restore the last chosen difficulty
+let savedLevel = "medium";
+try { savedLevel = localStorage.getItem("level") || "medium"; } catch {}
+setLevel(savedLevel);
 
 newGame();
 

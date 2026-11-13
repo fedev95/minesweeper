@@ -337,10 +337,13 @@ h1 {
 }
 
 /* Top panel */
+/* Three columns: the two sides always get the same width, so the
+   reset button stays centered no matter how long the times get */
 .panel {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
+  gap: 8px;
   width: 100%;
   max-width: 380px;
   padding: 8px 12px;
@@ -351,16 +354,149 @@ h1 {
 .counter {
   font-variant-numeric: tabular-nums;
   font-size: 1.2rem;
-  min-width: 80px;
+  white-space: nowrap;
 }
 
 .counter:last-child {
+  justify-self: end;
   text-align: right;
 }
 
+/* Time on top, best time below it (smaller), so the right side
+   stays narrow enough to fit its column even with long times */
+.times {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.2;
+}
+
 .best {
-  margin-left: 10px;
+  display: inline-block;
+  font-size: 0.8rem;
   color: var(--muted);
+}
+
+/* `display` above would otherwise override the hidden attribute */
+.best[hidden] {
+  display: none;
+}
+
+/* New best time: final time in the accent color, trophy pops */
+.record {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.best.new-record {
+  color: var(--accent);
+  font-weight: 700;
+  animation: record-pop 0.6s ease-out;
+}
+
+@keyframes record-pop {
+  0%   { transform: scale(1); }
+  35%  { transform: scale(1.35); }
+  60%  { transform: scale(0.95); }
+  100% { transform: scale(1); }
+}
+
+/* Trophy aura on a new record: a starry, near-white halo.
+   Two layers of thin rays spin in opposite directions and breathe
+   out of phase, so the points twinkle like a star. */
+.trophy {
+  --aura: color-mix(in srgb, var(--yellow) 25%, #fff);
+  --aura-soft: color-mix(in srgb, var(--aura) 55%, transparent);
+  position: relative;
+  display: inline-block;
+  isolation: isolate; /* keep the aura behind the emoji only */
+  transition: scale 0.3s ease-out;
+}
+
+/* Stays zoomed while the record is shown (until a new game starts) */
+.new-record .trophy {
+  scale: 1.3;
+  margin-inline: 3px; /* room for the bigger emoji next to the time */
+  animation: trophy-glow 1.6s ease-in-out infinite alternate;
+}
+
+.new-record .trophy::before,
+.new-record .trophy::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  border-radius: 50%;
+  /* rays fade out toward the tips */
+  -webkit-mask: radial-gradient(circle, #000 22%, transparent 72%);
+  mask: radial-gradient(circle, #000 22%, transparent 72%);
+  filter: blur(0.6px); /* smooth the ray edges */
+}
+
+/* Long points: 8 thin rays */
+.new-record .trophy::before {
+  inset: -75%;
+  background: repeating-conic-gradient(
+    from -6deg,
+    transparent 0deg,
+    var(--aura) 6deg,
+    transparent 12deg 45deg
+  );
+  /* `rotate` and `scale` are separate properties, so both loops combine */
+  animation:
+    aura-spin 6s linear infinite,
+    aura-breathe 1.6s ease-in-out infinite alternate;
+}
+
+/* Short points between the long ones, plus a soft core */
+.new-record .trophy::after {
+  inset: -45%;
+  background:
+    radial-gradient(circle, var(--aura-soft) 0 25%, transparent 60%),
+    repeating-conic-gradient(
+      from 17.5deg,
+      transparent 0deg,
+      var(--aura) 5deg,
+      transparent 10deg 45deg
+    );
+  animation:
+    aura-spin-reverse 9s linear infinite,
+    aura-breathe 1.6s ease-in-out -0.8s infinite alternate;
+}
+
+@keyframes aura-spin {
+  to { rotate: 360deg; }
+}
+
+@keyframes aura-spin-reverse {
+  to { rotate: -360deg; }
+}
+
+@keyframes aura-breathe {
+  from { opacity: 0.2; scale: 0.85; }
+  to   { opacity: 0.6; scale: 1.1; }
+}
+
+@keyframes trophy-glow {
+  from { filter: drop-shadow(0 0 1px var(--aura-soft)); }
+  to   { filter: drop-shadow(0 0 5px var(--aura)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .best.new-record,
+  .new-record .trophy {
+    animation: none;
+  }
+
+  .trophy {
+    transition: none;
+  }
+
+  /* Static star instead of the moving one */
+  .new-record .trophy::before,
+  .new-record .trophy::after {
+    animation: none;
+    opacity: 0.4;
+  }
 }
 
 #reset {
@@ -516,6 +652,35 @@ h1 {
   }
 }
 
+/* Losing: the board shakes and the mines pop in as a wave */
+.board-wrap.shake {
+  animation: board-shake 0.35s ease-out;
+}
+
+@keyframes board-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(5px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(2px); }
+}
+
+.cell.appear {
+  animation: mine-appear 0.18s ease-out;
+}
+
+@keyframes mine-appear {
+  from { transform: scale(0.6); opacity: 0.4; }
+  to   { transform: scale(1); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .board-wrap.shake,
+  .cell.appear {
+    animation: none;
+  }
+}
+
 .cell.wrong-flag {
   background-color: color-mix(in srgb, var(--yellow) 40%, var(--revealed));
 }
@@ -540,4 +705,205 @@ h1 {
 .help strong {
   color: var(--text);
   font-weight: 600;
+}
+
+/* ================= Stats sidebar ================= */
+
+.stats-open {
+  padding: 8px 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background-color: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.stats-open:hover {
+  background-color: var(--surface-hover);
+}
+
+.stats-open:focus,
+.sidebar-close:focus,
+.stats-reset:focus {
+  outline: none;
+}
+
+.stats-open:focus-visible,
+.sidebar-close:focus-visible,
+.stats-reset:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* The dialog is pinned to the right edge as a full-height panel */
+.sidebar {
+  position: fixed;
+  inset: 0 0 0 auto;
+  width: min(340px, 100vw);
+  max-width: 100vw;
+  height: 100dvh;
+  max-height: none;
+  margin: 0;
+  padding: 20px;
+  border: none;
+  border-left: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  box-shadow: -8px 0 24px rgb(0 0 0 / 0.25);
+  overflow-y: auto;
+  scrollbar-color: var(--border) transparent;
+}
+
+.sidebar[open] {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  animation: sidebar-in 0.2s ease-out;
+}
+
+.sidebar::backdrop {
+  background: rgb(0 0 0 / 0.4);
+  animation: backdrop-in 0.2s ease-out;
+}
+
+@keyframes sidebar-in {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(0); }
+}
+
+/* Closing: the script adds .closing, waits for the animation, then closes */
+.sidebar[open].closing {
+  animation: sidebar-out 0.2s ease-in forwards;
+}
+
+.sidebar.closing::backdrop {
+  animation: backdrop-out 0.2s ease-in forwards;
+}
+
+@keyframes backdrop-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes sidebar-out {
+  from { transform: translateX(0); }
+  to   { transform: translateX(100%); }
+}
+
+@keyframes backdrop-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar[open],
+  .sidebar[open].closing,
+  .sidebar::backdrop,
+  .sidebar.closing::backdrop {
+    animation: none;
+  }
+}
+
+.sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sidebar-header h2 {
+  margin: 0;
+  font-size: 1.4rem;
+}
+
+.sidebar-close {
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  color: var(--muted);
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+.sidebar-close:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.stats-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* One card per difficulty */
+.stats-card {
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.stats-card.current {
+  border-color: var(--accent);
+}
+
+.stats-card h3 {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin: 0 0 10px;
+  font-size: 1rem;
+}
+
+.stats-card h3 small {
+  color: var(--accent);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px 8px;
+  margin: 0;
+}
+
+.stats-grid div {
+  display: flex;
+  flex-direction: column-reverse; /* value on top, label below */
+  gap: 2px;
+}
+
+.stats-grid dt {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.stats-grid dd {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.stats-reset {
+  margin-top: auto;
+  padding: 8px 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.stats-reset:hover {
+  border-color: var(--red);
+  color: var(--red);
 }

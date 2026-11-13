@@ -49,14 +49,17 @@
           <span class="switch-thumb"></span>
         </button>
       </div>
+
+      <button id="stats-open" class="stats-open" type="button"
+              aria-haspopup="dialog" aria-controls="stats">Stats</button>
     </div>
 
     <div class="panel">
       <div class="counter" title="Mines left">💣 <span id="mines-left">0</span></div>
       <button id="reset" title="Restart">🙂</button>
-      <div class="counter">
+      <div class="counter times">
         <span title="Time">⏱ <span id="timer">0</span></span>
-        <span class="best" title="Best time" hidden>🏆 <span id="best"></span></span>
+        <span class="best" title="Best time" hidden><span class="trophy">🏆</span> <span id="best"></span></span>
       </div>
     </div>
 
@@ -66,6 +69,15 @@
 
     <p class="help"><strong>Left click:</strong> <span id="help-left">reveal</span> · <strong>Right click:</strong> <span id="help-right">flag</span> · <strong>Middle click:</strong> open neighbors / highlight</p>
   </main>
+
+  <dialog id="stats" class="sidebar" aria-labelledby="stats-title">
+    <header class="sidebar-header">
+      <h2 id="stats-title">Statistics</h2>
+      <button type="button" class="sidebar-close" id="stats-close" aria-label="Close statistics">✕</button>
+    </header>
+    <div id="stats-body" class="stats-body"></div>
+    <button type="button" class="stats-reset" id="stats-reset">Reset statistics</button>
+  </dialog>
 
   <script src="script.js"></script>
 </body>
