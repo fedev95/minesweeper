@@ -5,6 +5,7 @@
 import { LEVELS, DEFAULT_LEVEL } from "./levels.js";
 import { layoutBoard } from "./layout.js";
 import { playWave, cancelWave, shake, prefersReducedMotion } from "./effects.js";
+import { generateMines } from "./solver.js";
 
 const boardEl = document.getElementById("board");
 
@@ -17,6 +18,7 @@ export const state = {
   endedAt: 0,         // performance.now() when the last game ended
   revealedCount: 0,
   flagsCount: 0,
+  noGuess: true,      // boards solvable without guessing (applies on the first click)
 };
 
 // ---------- Events ----------
@@ -54,6 +56,10 @@ export function neighbors(r, c) {
 
 // ---------- Setup ----------
 
+export function setNoGuess(on) {
+  state.noGuess = on;
+}
+
 export function setLevel(key) {
   state.levelKey = LEVELS[key] ? key : DEFAULT_LEVEL;
   state.level = LEVELS[state.levelKey];
@@ -90,23 +96,11 @@ export function relayout() {
   layoutBoard(boardEl, state.level);
 }
 
-// Place mines, avoiding the first clicked cell and its neighbors
+// Place mines on the first click: that cell and its neighbors stay safe
 function placeMines(safeR, safeC) {
   const { cells, level } = state;
-  const forbidden = new Set([index(safeR, safeC)]);
-  neighbors(safeR, safeC).forEach(([r, c]) => forbidden.add(index(r, c)));
-
-  const candidates = [];
-  for (let i = 0; i < cells.length; i++) {
-    if (!forbidden.has(i)) candidates.push(i);
-  }
-
-  // Partial Fisher-Yates
-  for (let i = 0; i < level.mines; i++) {
-    const j = i + Math.floor(Math.random() * (candidates.length - i));
-    [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
-    cells[candidates[i]].mine = true;
-  }
+  const mines = generateMines(level, index(safeR, safeC), { noGuess: state.noGuess });
+  mines.forEach((isMine, i) => { cells[i].mine = isMine; });
 
   // Compute numbers
   for (let r = 0; r < level.rows; r++) {

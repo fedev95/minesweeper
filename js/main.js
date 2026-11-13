@@ -1,13 +1,14 @@
 // Entry point: wires the board's events to the timer, the top panel and
 // the statistics, and starts the UI components.
 
-import { state, on, setLevel, newGame, relayout } from "./board.js";
+import { state, on, setLevel, setNoGuess, newGame, relayout } from "./board.js";
 import { initBoardInput } from "./board-input.js";
 import { createTimer } from "./timer.js";
 import * as hud from "./hud.js";
 import { getBest, submitTime, recordResult } from "./records.js";
 import { initDifficulty } from "./difficulty.js";
 import { initFlagMode } from "./flag-mode.js";
+import { initSwitch } from "./switch.js";
 import { initShortcuts } from "./shortcuts.js";
 import { initStatsPanel, isStatsOpen } from "./stats-panel.js";
 import { initThemeSelect } from "./theme-select.js";
@@ -53,6 +54,13 @@ on("lose", () => {
 
 initThemeSelect();
 initFlagMode();
+initSwitch({
+  id: "no-guess",
+  labelId: "no-guess-label",
+  storageKey: "no-guess",
+  defaultOn: true,
+  onChange: setNoGuess,
+});
 initBoardInput();
 hud.onReset(newGame);
 initShortcuts({ onRestart: newGame, isBlocked: isStatsOpen });
