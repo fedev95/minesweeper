@@ -4,7 +4,7 @@
 
 import { LEVELS, DEFAULT_LEVEL } from "./levels.js";
 import { layoutBoard } from "./layout.js";
-import { playWave, cancelWave, shake, prefersReducedMotion } from "./effects.js";
+import { playWave, cancelWave, shake, shimmer, prefersReducedMotion } from "./effects.js";
 import { generateMines } from "./solver.js";
 
 const boardEl = document.getElementById("board");
@@ -213,7 +213,10 @@ function checkWin(originIndex) {
   unflagged.forEach((cell) => { cell.flagged = true; });
   playWave({ cells, cols: level.cols }, originIndex, unflagged, (cell) => {
     cell.el.textContent = "🚩";
-  }, () => pulseMines("win"));
+  }, () => {
+    glowMines("win");
+    shimmer({ cells, rows: level.rows, cols: level.cols });
+  });
 }
 
 function showMine(cell) {
@@ -240,14 +243,14 @@ function lose(explodedCell) {
         cell.el.textContent = "❌";
       }
     });
-    pulseMines("lose");
+    glowMines("lose");
   });
 }
 
-// Light pulse on every mine cell
-function pulseMines(result) {
+// Glow on every mine cell (red on a loss, light on a win)
+function glowMines(result) {
   state.cells.forEach((cell) => {
-    cell.el.classList.remove("appear"); // let the pulse animation take over
-    if (cell.mine) cell.el.classList.add("pulse", result);
+    cell.el.classList.remove("appear");
+    if (cell.mine) cell.el.classList.add("glow", result);
   });
 }

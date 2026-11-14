@@ -1,0 +1,77 @@
+/* Starry aura behind an element's content: two layers of thin rays spin in
+   opposite directions and breathe out of phase, so the points twinkle.
+   Used by the record trophy.
+   Customize per use: --aura (color), --aura-long / --aura-short (how far
+   the long and short rays reach, as a negative inset). */
+.aura {
+  --aura: #fff;
+  --aura-soft: color-mix(in srgb, var(--aura) 55%, transparent);
+  position: relative;
+  isolation: isolate; /* keep the aura behind the content only */
+}
+
+.aura::before,
+.aura::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  border-radius: 50%;
+  pointer-events: none;
+  /* rays fade out toward the tips */
+  -webkit-mask: radial-gradient(circle, #000 22%, transparent 72%);
+  mask: radial-gradient(circle, #000 22%, transparent 72%);
+  filter: blur(0.6px); /* smooth the ray edges */
+}
+
+/* Long points: 8 thin rays */
+.aura::before {
+  inset: var(--aura-long, -75%);
+  background: repeating-conic-gradient(
+    from -6deg,
+    transparent 0deg,
+    var(--aura) 6deg,
+    transparent 12deg 45deg
+  );
+  /* `rotate` and `scale` are separate properties, so both loops combine */
+  animation:
+    aura-spin 6s linear infinite,
+    aura-breathe 1.6s ease-in-out infinite alternate;
+}
+
+/* Short points between the long ones, plus a soft core */
+.aura::after {
+  inset: var(--aura-short, -45%);
+  background:
+    radial-gradient(circle, var(--aura-soft) 0 25%, transparent 60%),
+    repeating-conic-gradient(
+      from 17.5deg,
+      transparent 0deg,
+      var(--aura) 5deg,
+      transparent 10deg 45deg
+    );
+  animation:
+    aura-spin-reverse 9s linear infinite,
+    aura-breathe 1.6s ease-in-out -0.8s infinite alternate;
+}
+
+@keyframes aura-spin {
+  to { rotate: 360deg; }
+}
+
+@keyframes aura-spin-reverse {
+  to { rotate: -360deg; }
+}
+
+@keyframes aura-breathe {
+  from { opacity: 0.2; scale: 0.85; }
+  to   { opacity: 0.6; scale: 1.1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Static star instead of the moving one */
+  .aura::before,
+  .aura::after {
+    animation: none;
+    opacity: 0.4;
+  }
+}

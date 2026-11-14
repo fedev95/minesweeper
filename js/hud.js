@@ -7,6 +7,7 @@ const resetBtn = document.getElementById("reset");
 const timeEl = document.getElementById("timer").parentElement;
 const bestEl = document.getElementById("best");
 const bestWrap = bestEl.parentElement;
+const trophy = bestWrap.querySelector(".trophy");
 
 const FACES = { playing: "🙂", won: "😎", lost: "😵" };
 
@@ -31,9 +32,11 @@ export function showBest(best) {
 export function celebrateRecord() {
   timeEl.classList.add("record");
   bestWrap.classList.add("new-record");
+  trophy.classList.add("aura");
 }
 
 export function clearRecordHighlight() {
   timeEl.classList.remove("record");
   bestWrap.classList.remove("new-record");
+  trophy.classList.remove("aura");
 }

@@ -46,6 +46,21 @@ export function cancelWave() {
   waveTimeouts = [];
 }
 
+// Win: a diagonal sweep of light across the opened cells, top-left to
+// bottom-right. Mines are skipped (they glow).
+const SHIMMER_SWEEP = 700; // ms between the first and the last cell lighting up
+
+export function shimmer({ cells, rows, cols }) {
+  if (prefersReducedMotion()) return;
+  const step = SHIMMER_SWEEP / Math.max(1, rows + cols - 2);
+  cells.forEach((cell, i) => {
+    if (cell.mine) return;
+    const diagonal = Math.floor(i / cols) + (i % cols);
+    cell.el.style.setProperty("--shimmer-delay", `${Math.round(diagonal * step)}ms`);
+    cell.el.classList.add("shimmer");
+  });
+}
+
 export function shake(el) {
   el.classList.remove("shake");
   void el.offsetWidth; // restart the animation if it is still running
