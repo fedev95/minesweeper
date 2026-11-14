@@ -64,6 +64,8 @@
   position: relative;
   isolation: isolate; /* keep the halo behind the emoji */
   z-index: 1;         /* let it spill over the neighboring cells */
+  /* the cell itself lights up a little, in step with the halo */
+  animation: glow-light 2.6s ease-in-out infinite alternate;
 }
 
 .cell.glow::before {
@@ -80,12 +82,22 @@
   animation: glow-breathe 2.6s ease-in-out infinite alternate;
 }
 
+@keyframes glow-light {
+  from { filter: brightness(1); }
+  to   { filter: brightness(1.22); }
+}
+
 @keyframes glow-breathe {
   from { opacity: 0.45; }
   to   { opacity: 1; }
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .cell.glow {
+    animation: none;
+    filter: brightness(1.12);
+  }
+
   .cell.glow::before {
     animation: none;
     opacity: 0.8;
